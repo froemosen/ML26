@@ -50,7 +50,34 @@ class RegressionStump():
         self.val = None
         self.left = None
         self.right = None
+
         ### YOUR CODE HERE
+        n, d = data.shape
+        best_loss = np.inf
+
+        for i in range(d):
+            feature_values = data[:, i]
+            possible_splits = np.unique(feature_values)
+
+            for split_value in possible_splits[:-1]:
+                left_mask = feature_values <= split_value
+                right_mask = feature_values > split_value
+
+                left_targets = targets[left_mask]
+                right_targets = targets[right_mask]
+
+                left_mean = np.mean(left_targets)
+                right_mean = np.mean(right_targets)
+                left_loss = np.sum((left_targets - left_mean) ** 2)
+                right_loss = np.sum((right_targets - right_mean) ** 2)
+                total_loss = left_loss + right_loss
+
+                if total_loss < best_loss:
+                    best_loss = total_loss
+                    self.idx = i
+                    self.val = split_value
+                    self.left = left_mean
+                    self.right = right_mean
         ### END CODE
 
     def predict(self, X):
@@ -63,6 +90,7 @@ class RegressionStump():
         """
         pred = None
         ### YOUR CODE HERE
+        pred = np.where(X[:, self.idx] <= self.val, self.left, self.right)
         ### END CODE
         return pred
     
@@ -73,10 +101,12 @@ class RegressionStump():
             X: np.array, shape n,d
             y: np.array, shape n, 
 
-        returns out: scalar - mean least squares loss.
+        returns out: scalar : mean least squares loss.
         """
         out = None
         ### YOUR CODE HERE
+        predictions = self.predict(X)
+        out = np.mean((predictions - y) ** 2)
         ### END CODE
         return out
         
