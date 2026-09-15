@@ -15,6 +15,7 @@ class LinearRegressor():
     def __init__(self):
         self.w = None
         
+        
     def hardcode_bias(self, X):
         """
         Append or prepend a hardcoded feature of value '1' to represent the bias.
@@ -28,7 +29,10 @@ class LinearRegressor():
         Hint: np.concatenate may be useful
         """
         newX = X.copy()
+
         ### YOUR CODE HERE 1-3 lines
+        ones = np.ones((X.shape[0], 1))
+        newX = np.column_stack((ones, newX))  # Prepend a column of ones to X
         ### END CODE
         return newX
     
@@ -63,6 +67,7 @@ class LinearRegressor():
         pred = None
         newX = self.hardcode_bias(X)
         ### YOUR CODE HERE 1-2 lines
+        pred = newX @ self.w  #(x^T+b)w
         ### END CODE
         return pred
 
@@ -76,6 +81,8 @@ class LinearRegressor():
         """
         score = 0 
         ### YOUR CODE HERE 1-3 lines
+        predictions = self.predict(X)
+        score = np.mean((predictions - y) ** 2)  # Mean squared
         ### END CODE
         return score
         
