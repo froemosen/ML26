@@ -8,13 +8,21 @@ import urllib
 def load_data():
     """ Simple helper function for downloading and loading data """
     print('loading data for nonlinear experiment')
-    filename = 'nonlinear_data.npz'
+    filename = os.path.join(os.path.dirname(__file__), 'nonlinear_data.npz')
     if not os.path.exists(filename):
-        filepath = 'https://github.com/kaspergl/ML22/tree/main/week4/nonlinear_data.npz'
+        filepath = 'https://raw.githubusercontent.com/kaspergl/ML22/main/week4/nonlinear_data.npz'
         print('file not exists - downloading:', filepath)
         with open(filename, 'wb') as fh:
             fh.write(urllib.request.urlopen(filepath).read())
-    D =  np.load(filename, allow_pickle=True)
+    try:
+        D = np.load(filename, allow_pickle=False)
+    except Exception:
+        # If the local file is corrupted, fetch a clean copy and retry once.
+        filepath = 'https://raw.githubusercontent.com/kaspergl/ML22/main/week4/nonlinear_data.npz'
+        print('file appears invalid - re-downloading:', filepath)
+        with open(filename, 'wb') as fh:
+            fh.write(urllib.request.urlopen(filepath).read())
+        D = np.load(filename, allow_pickle=False)
     return D
 
 
@@ -43,10 +51,23 @@ class PerceptronClassifier():
     
         """
         if w is None:
-            w = np.zeros(X.shape[1])       
+            w = np.zeros(X.shape[1])
         bestw = w
+        self.w = w   
+        bestw_score = self.score(X, y)    
+        
         ### YOUR CODE
+        for i in range(maxiter):
+            j = i % X.shape[0]
+            
+            if self.predict(X[j]) != y[j]:
+                self.w = self.w + y[j] * X[j]
+            
+            if self.score(X,y) > bestw_score:
+                bestw = self.w
+                bestw_score = self.score(X,y)
         ### END CODE
+        
         self.w = bestw
 
     def predict(self, X):
@@ -58,6 +79,7 @@ class PerceptronClassifier():
         """
         pred = None
         ### YOUR CODE HERE 1-2 lines
+        pred = np.sign(self.w @ X.T)
         ### END CODE
         return pred
 
@@ -69,10 +91,10 @@ class PerceptronClassifier():
         returns
           score (float) classifier accuracy on data X with labels y
         """
-        score = 0 
         ### YOUR CODE HERE 1-3 lines
+        return np.mean(self.predict(X) == y)
         ### END CODE
-        return score
+    
     
         
 
@@ -144,12 +166,12 @@ def square_transform(X):
       Xt: np.array of shape(n, 3) 
     """
     # Insert code here to transform the data - aim to make a vectorized solution!
-    Xt = X
 
     ### YOUR CODE HERE 2-4 lines
+    X = (np.vstack([np.ones_like(X.T[0]), X.T]).T) ** 2
     ### END CODE 
     
-    return Xt
+    return X
     
 def plot_contour(w, phi, ax):
     """
@@ -167,7 +189,7 @@ def plot_contour(w, phi, ax):
     for i, zy in enumerate(ys):
         for j, zx in enumerate(xs):
             point = phi(np.array([zx, zy]).reshape(1, 2))            
-            predict = w.reshape(1, -1) @ point.reshape(-1, 1)
+            predict = (w.reshape(1, -1) @ point.reshape(-1, 1)).item()
             img[i, j] = predict
     cont = ax.contour(xs, ys, img, [0], colors='r', linewidths=3)
     return cont
@@ -185,10 +207,11 @@ def poly_transform(X):
     Returns: 
       numpy arrays shape (n, d) 
     """
-    Xt = X
+    
     ### YOUR CODE HERE
+    return np.c_[np.ones(X.shape[0]), X[:, 0], X[:, 1], X[:, 0]**2, X[:, 0]*X[:, 1], X[:, 1]**2, X[:, 0]**3, (X[:, 0]**2)*X[:, 1], X[:, 0]*(X[:, 1]**2), X[:, 1]**3]
     ### END CODE
-    return Xt
+
 
 
 
@@ -332,6 +355,9 @@ class LinRegClassifier():
         """  
         w = np.zeros(X.shape[1])
         ### YOUR CODE HERE 1-3 lines
+        pinv = np.linalg.pinv(X)
+        w = pinv @ y
+        
         ### END CODE
         self.w =  w
 
@@ -344,6 +370,7 @@ class LinRegClassifier():
         """
         pred = None
         ### YOUR CODE HERE 1-2 lines
+        pred = X @ self.w
         ### END CODE
         return pred
 
@@ -357,6 +384,7 @@ class LinRegClassifier():
         """
         score = 0 
         ### YOUR CODE HERE 1-3 lines
+        score = np.mean(np.sign(self.predict(X)) == y)
         ### END CODE
         return score
 
@@ -384,3 +412,10 @@ if __name__=='__main__':
         run()
     if args.linreg:
         run_linreg()
+
+
+    test_pla_train()
+    plot_data()
+    contour_test()
+    run()
+    run_linreg()
